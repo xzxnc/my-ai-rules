@@ -1,0 +1,32 @@
+# AI Domain Rules - Auto-generated
+# Updated: 2026-05-05T16:17:20Z
+
+DOMAIN-KEYWORD,anthropic
+DOMAIN-KEYWORD,chatgpt
+DOMAIN-KEYWORD,claude
+DOMAIN-KEYWORD,grok
+DOMAIN-KEYWORD,openai
+DOMAIN-SUFFIX,ab.chatgpt.com
+DOMAIN-SUFFIX,anthropic.com
+DOMAIN-SUFFIX,api.githubcopilot.com
+DOMAIN-SUFFIX,chatgpt.com
+DOMAIN-SUFFIX,claude.ai
+DOMAIN-SUFFIX,claude.com
+DOMAIN-SUFFIX,claudeusercontent.com
+DOMAIN-SUFFIX,console.anthropic.com
+DOMAIN-SUFFIX,deepmind.com
+DOMAIN-SUFFIX,deepmind.google
+DOMAIN-SUFFIX,githubcopilot.com
+DOMAIN-SUFFIX,grok.com
+DOMAIN-SUFFIX,lmsudio.ai
+DOMAIN-SUFFIX,openai.com
+DOMAIN-SUFFIX,openaiapi-site.azureedge.net
+DOMAIN-SUFFIX,perplexity.ai
+DOMAIN-SUFFIX,poe.com
+DOMAIN-SUFFIX,recraft.ai
+DOMAIN-SUFFIX,sora.com
+DOMAIN-SUFFIX,x.ai
+PROCESS-NAME,Claude
+PROCESS-NAME,Claude Helper
+PROCESS-NAME,Claude Helper (Renderer)
+PROCESS-NAME,grok
