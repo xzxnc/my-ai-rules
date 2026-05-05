@@ -8,6 +8,9 @@ on:
     branches:
       - main
 
+permissions:
+  contents: write
+
 jobs:
   sync-and-filter:
     runs-on: ubuntu-latest
@@ -17,40 +20,27 @@ jobs:
         uses: actions/checkout@v4
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          fetch-depth: 0  # 获取完整历史
+          fetch-depth: 0
 
-      - name: Download original rules
+      - name: Download and filter
         run: |
           curl -sL "https://cdn.jsdelivr.net/gh/szkane/ClashRuleSet@main/Clash/Ruleset/AiDomain.list" -o original.list
-          echo "原始文件行数: $(wc -l < original.list)"
-
-      - name: Filter AI rules
-        run: |
-          # 1. 删除注释和空行
+          
+          # 过滤处理
           grep -v '^#' original.list | grep -v '^$' > step1.list
-          
-          # 2. 删除 Bing 非 AI 内容
           grep -vE '(bing\.com|edgesuite\.net|msn\.com|office\.com|live\.com|outlook\.com|microsoft\.com)$' step1.list > step2.list
-          
-          # 3. 删除 Google 非 AI 内容
-          grep -vE '\.google\.(com|cn|co\.jp|co\.kr|co\.uk)$' step2.list | \
-          grep -vE '^DOMAIN-SUFFIX,(google\.com|google\.cn|gmail\.com|googlemail\.com|googlevideo\.com|doubleclick\.net|googlesyndication\.com)$' > step3.list
-          
-          # 4. 只保留 AI 关键词
+          grep -vE '\.google\.(com|cn|co\.jp|co\.kr|co\.uk)$' step2.list | grep -vE '^DOMAIN-SUFFIX,(google\.com|google\.cn|gmail\.com|googlevideo\.com|doubleclick\.net|googlesyndication\.com)$' > step3.list
           cat step3.list | grep -iE '(openai|chatgpt|anthropic|claude|recraft|perplexity|deepseek|x\.ai|grok|githubcopilot|lmstudio|lmsudio|gemini|bard|deepmind|aistudio|sora|midjourney|runwayml|characterai|poe|elevenlabs|huggingface|ollama)' > step4.list
-          
-          # 5. 去重 + 生成最终文件
           sort -u step4.list > step5.list
           
           {
-            echo "# ========== AI Domain Rules =========="
-            echo "# Auto-generated from szkane/ClashRuleSet"
+            echo "# AI Domain Rules - Auto-generated"
             echo "# Updated: $(date -u +%Y-%m-%dT%H:%M:%SZ)"
             echo ""
             cat step5.list
           } > AiDomain_AI.list
           
-          echo "过滤后行数: $(grep -v '^#' AiDomain_AI.list | grep -v '^$' | wc -l)"
+          echo "过滤后: $(grep -v '^#' AiDomain_AI.list | grep -v '^$' | wc -l) 行"
 
       - name: Commit and push
         run: |
@@ -58,19 +48,14 @@ jobs:
           git config --local user.name "github-actions[bot]"
           git add AiDomain_AI.list
           
-          # 检查是否有变化
           if git diff --staged --quiet; then
-            echo "没有变化，跳过提交"
+            echo "没有变化，跳过"
             exit 0
           fi
           
           git diff --staged --stat
           git commit -m "chore: sync AI rules $(date -u +%Y-%m-%d)"
-          
-          # 首次 push 可能需要强制推送
-          git push || git push -f
+          git push
 
-      - name: Show final result
-        run: |
-          echo "=== 最终规则预览 ==="
-          head -30 AiDomain_AI.list
+      - name: Show result
+        run: head -30 AiDomain_AI.list
