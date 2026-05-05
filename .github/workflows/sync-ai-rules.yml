@@ -22,60 +22,37 @@ jobs:
         run: |
           curl -sL "https://cdn.jsdelivr.net/gh/szkane/ClashRuleSet@main/Clash/Ruleset/AiDomain.list" \
             -o original.list
+          echo "原始文件行数: $(wc -l < original.list)"
 
       - name: Filter AI rules
         run: |
-          # ========== 过滤开始 ==========
+          # 删除所有 # 开头注释
+          grep -v '^#' original.list | grep -v '^$' > step1.list
           
-          # 1. 删除所有 # 开头的注释行
-          grep -v '^#' original.list > step1.list
+          # 删除 Bing 非 AI 内容
+          grep -vE '(bing\.com|bing\.cn|www\.bing|edgesuite\.net|msn\.com|office\.com|live\.com|outlook\.com|microsoft\.com)$' step1.list > step2.list
           
-          # 2. 删除空行
-          grep -v '^$' step1.list > step2.list
+          # 删除 Google 非 AI 内容
+          grep -vE '\.google\.(com|cn|co\.jp|co\.kr|co\.uk)$' step2.list | \
+          grep -vE '^DOMAIN-SUFFIX,(google\.com|google\.cn|gmail\.com|googlemail\.com|googlevideo\.com|doubleclick\.net|googlesyndication\.com)$' > step3.list
           
-          # ========== 删除 Bing 非 AI 内容 ==========
-          # 删除包含这些 Bing 相关但非 AI 的域名
-          grep -vE '(bing\.com|bing\.cn|www\.bing|api\.bing|edgesuite\.net|msn\.com|office\.com|live\.com|outlook\.com|microsoft\.com)$' step2.list > step3.list
+          # 只保留 AI 相关关键词
+          cat step3.list | grep -iE '(openai|chatgpt|anthropic|claude|recraft|perplexity|deepseek|x\.ai|grok|cerebras|githubcopilot|lmstudio|lmsudio|gemini|bard|deepmind|aistudio|sora|midjourney|runwayml|characterai|poe|jasper|notion|elevenlabs|huggingface|ollama)' > step4.list
           
-          # ========== 删除 Google 非 AI 内容 ==========
-          # 保留 Google AI (Gemini, Bard, etc)，删除其他
-          grep -vE '\.google\.(com|cn|co\.jp|co\.kr|co\.uk)$' step3.list | \
-          grep -vE '^DOMAIN-SUFFIX,(google\.com|google\.cn|gmail\.com|googlemail\.com|googlevideo\.com|doubleclick\.net|googlesyndication\.com)$' > step4.list
+          # 去重排序
+          sort -u step4.list -o step5.list
           
-          # ========== 只保留 AI 相关 ==========
-          # 定义 AI 关键词（不区分大小写）
-          cat step4.list | grep -iE '(openai|chatgpt|anthropic|claude|recraft|perplexity|deepseek|x\.ai|grok|cerebras|githubcopilot|lmstudio|lmsudio|gemini|bard|deepmind|aistudio|sora|midjourney|stable-diffusion|runwayml|characterai|poe|jasper|copy\.ai|writesonic|notion|notionnext|grammarly|descript|elevenlabs|coqui|ribeen|replicate|fal\.ai|huggingface|ollama)' > step5.list
-          
-          # ========== 额外补充：手动添加关键 AI 域名 ==========
-          # 因为有些域名可能关键词没匹配到，手动补充
-          cat << 'EOF' >> step5.list
-DOMAIN-SUFFIX,openai.com
-DOMAIN-SUFFIX,chatgpt.com
-DOMAIN-SUFFIX,anthropic.com
-DOMAIN-SUFFIX,claude.ai
-DOMAIN-SUFFIX,perplexity.ai
-DOMAIN-SUFFIX,deepseek.com
-DOMAIN-SUFFIX,x.ai
-EOF
+          # 生成最终文件
+          {
+            echo "# ========== AI Domain Rules =========="
+            echo "# Auto-generated from szkane/ClashRuleSet"
+            echo "# Only keep AI-related domains"
+            echo "# Updated: $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+            echo ""
+            cat step5.list
+          } > AiDomain_AI.list
 
-          # ========== 去重 + 排序 ==========
-          sort -u step5.list -o final.list
-
-          # ========== 添加文件头 ==========
-          cat << 'HEADER' > AiDomain_AI.list
-# ========== AI Domain Rules ==========
-# Auto-generated from szkane/ClashRuleSet
-# Only keep AI-related domains
-# Updated: 
-HEADER
-          date -u +%Y-%m-%dT%H:%M:%SZ >> AiDomain_AI.list
-          echo "" >> AiDomain_AI.list
-          cat final.list >> AiDomain_AI.list
-
-          # ========== 统计 ==========
-          echo "=== 过滤结果 ==="
-          echo "原始规则: $(cat original.list | wc -l) 行"
-          echo "过滤后: $(cat AiDomain_AI.list | grep -v '^#' | grep -v '^$' | wc -l) 行"
+          echo "过滤后行数: $(grep -v '^#' AiDomain_AI.list | grep -v '^$' | wc -l)"
 
       - name: Commit and push
         run: |
@@ -83,10 +60,10 @@ HEADER
           git config --local user.name "github-actions[bot]"
           git add AiDomain_AI.list
           git diff --staged --stat
-          git commit -m "chore: sync AI rules $(date -u +%Y-%m-%d)" || echo "No changes"
+          git commit -m "chore: sync AI rules $(date -u +%Y-%m-%d)" || echo "No changes to commit"
           git push
 
       - name: Show final result
         run: |
-          echo "=== 最终保留的规则预览 ==="
+          echo "=== 最终规则预览 (前30行) ==="
           head -30 AiDomain_AI.list
