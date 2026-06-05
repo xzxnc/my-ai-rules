@@ -1,7 +1,7 @@
 # ========== AI Domain Rules ==========
 # Auto-generated from szkane/ClashRuleSet
 # Only keep AI-related domains
-# Updated: 2026-06-04
+# Updated: 2026-06-05
 
 # OpenAI / ChatGPT
 DOMAIN-KEYWORD,openai
